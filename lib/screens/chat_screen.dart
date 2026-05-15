@@ -13,6 +13,7 @@ import 'resources_screen.dart';
 import 'profile_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:telephony/telephony.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Navigator.pop(context);
                 _startNewChat();
               },
-              child: const Text('Yes, start new'),
+              child: const Text('Yes, start'),
             ),
           ],
         );
@@ -251,11 +252,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
    final firestoreService = FirestoreService();
 
-   // Save user message
-   await firestoreService.saveChatMessage(
-     text,
-     MessageSender.user.index,
-   );
+   try {
+     // Save user message
+     await firestoreService.saveChatMessage(
+       text,
+       MessageSender.user.index,
+     );
+   } catch (e) {
+     print("Error saving user message to Firestore: $e");
+     if (mounted) {
+       ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text("⚠️ Message saved locally but failed to sync: $e")),
+       );
+     }
+   }
 
    // Fast greetings
    final greetings = [
@@ -297,16 +307,16 @@ class _ChatScreenState extends State<ChatScreen> {
    // Risk analysis
    RiskAssessment riskAssessment =
        RiskEngine.analyzeText(text);
-setState(() {
-  _messages.insert(
-    0,
-    ChatMessage(
-      text: "🔎 Analysis: ${riskAssessment.level}\n${riskAssessment.reason}",
-      sender: MessageSender.bot,
-      timestamp: DateTime.now(),
-    ),
-  );
-});
+   setState(() {
+     _messages.insert(
+       0,
+       ChatMessage(
+         text: "🔎 Analysis: ${riskAssessment.reason}",
+         sender: MessageSender.bot,
+         timestamp: DateTime.now(),
+       ),
+     );
+   });
    if (riskAssessment.level == RiskLevel.critical ||
        riskAssessment.level == RiskLevel.high ||
        riskAssessment.level == RiskLevel.medium) {
@@ -379,28 +389,31 @@ setState(() {
      _isTyping = false;
    });
 
-   // Save bot reply
-   await firestoreService.saveChatMessage(
-     botReply,
-     MessageSender.bot.index,
-   );
+   try {
+     // Save bot reply
+     await firestoreService.saveChatMessage(
+       botReply,
+       MessageSender.bot.index,
+     );
+   } catch (e) {
+     print("Error saving bot reply to Firestore: $e");
+   }
  }
 
   /// Handle different risk levels
   void _handleRiskLevel(RiskAssessment assessment) {
-    final appMode = context.read<AppModeProvider>().currentMode;
+    // Send SMS immediately for Critical and High risk levels
+    if (assessment.level == RiskLevel.critical || assessment.level == RiskLevel.high) {
+      _sendEmergencySMS(assessment);
+    }
     
     switch (assessment.level) {
       case RiskLevel.critical:
         _showCriticalRiskAlert(assessment);
-        if (appMode == AppMode.emergency) {
-          _sendEmergencySMS(assessment);
-        }
         break;
         
       case RiskLevel.high:
         _showHighRiskAlert(assessment);
-        _sendEmergencySMS(assessment);
         break;
         
       case RiskLevel.medium:
@@ -432,6 +445,7 @@ setState(() {
                 style: TextStyle(
                   color: Color(0xFFFF6B6B),
                   fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
             ),
@@ -510,8 +524,8 @@ setState(() {
       barrierDismissible: true,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFFFF9E6),
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.warning_rounded, color: Color(0xFFFF9800), size: 28),
             SizedBox(width: 12),
             Expanded(
@@ -629,24 +643,45 @@ setState(() {
           return;
         }
 
-        String riskLevel = assessment.level == RiskLevel.critical ? "🚨 Critical" : "⚠️ High";
+        String riskLevel = assessment.level == RiskLevel.critical ? "Critical" : "High";
         String message = "Emergency alert from YouMatter:\nUser is in a $riskLevel state and needs your support.\nPlease contact them immediately.";
         
         for (var doc in snapshot.docs) {
-          String phone = doc['phone'];
-          String name = doc['name'];
+          String phone = doc['phone']?.toString().trim() ?? "";
+          String name = doc['name']?.toString() ?? "Contact";
           if (phone.isNotEmpty) {
             try {
+              print("Sending SMS to $name ($phone)...");
               await telephony.sendSms(to: phone, message: message);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("✅ Alert sent to $name"), backgroundColor: Colors.green),
+                  SnackBar(content: Text("Alert sent to $name"), backgroundColor: Colors.green),
                 );
               }
-            } catch (e) {
+            } catch (e, stack) {
+              print("Failed to send SMS to $name: $e\n$stack");
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("❌ Failed to send to $name"), backgroundColor: Colors.red),
+                  SnackBar(
+                    content: Text("Failed to send automatic alert to $name. Try manually?"),
+                    backgroundColor: Colors.red,
+                    action: SnackBarAction(
+                      label: "Open SMS",
+                      textColor: Colors.white,
+                      onPressed: () async {
+                        final Uri smsLaunchUri = Uri(
+                          scheme: 'sms',
+                          path: phone,
+                          queryParameters: <String, String>{
+                            'body': message,
+                          },
+                        );
+                        if (await canLaunchUrl(smsLaunchUri)) {
+                          await launchUrl(smsLaunchUri);
+                        }
+                      },
+                    ),
+                  ),
                 );
               }
             }
@@ -687,14 +722,17 @@ setState(() {
               style: TextStyle(
                 color: isEmergency ? const Color(0xFFFF6B6B) : const Color(0xFF1DD1A1),
                 fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
             Text(
-              isEmergency ? "We are here for you" : "Your smart companion is listening to you",
-              style: TextStyle(
-                fontSize: 12,
+              isEmergency 
+                  ? "We are here for you" 
+                  : "Your smart companion is listening",
+              style: const TextStyle(
+                fontSize: 11,
                 fontWeight: FontWeight.normal,
-                color: const Color(0xFF636E72),
+                color: Color(0xFF636E72),
               ),
             ),
           ],

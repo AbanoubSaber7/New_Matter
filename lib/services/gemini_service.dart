@@ -86,10 +86,11 @@ class GeminiService {
     try {
       final prompt = "Analyze this user text for mental health risk (CRITICAL, HIGH, MEDIUM, LOW). "
           "Also, provide your empathetic response as 'Companion'. "
+          "IMPORTANT: Always reply in the SAME LANGUAGE as the user (Arabic or English). "
           "Return the result in this EXACT format: "
           "RISK_LEVEL: [LEVEL] "
           "REPLY: [YOUR_RESPONSE] "
-          "Text: \"$text\"";
+          "User Text: \"$text\"";
       
       final response = await _model.generateContent([Content.text(prompt)]);
       final result = response.text ?? "";
@@ -108,8 +109,16 @@ class GeminiService {
     } catch (e) {
       print("API Error (Falling back to local response): $e");
       
+      // Check if text is mostly Arabic
+      bool isArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+
       // Smart fallback replies list in case of internet or quota failure
-      final fallbackReplies = [
+      final fallbackReplies = isArabic ? [
+        "أنا بسمعك كويس.. باين إنك بتمر بوقت صعب، تحب تحكيلي أكتر عن اللي حاسس بيه؟",
+        "أنا جنبك ومش هسيبك. افتكر إن مشاعرك مهمة جداً وأنا مهتم أسمعك.",
+        "خد نفس عميق.. أنا مهتم بكل كلمة بتقولها، كمل كلامك أنا سامعك بكل حب.",
+        "واضح إن الأمور تقيلة عليك دلوقتي، بس أنت مش لوحدك، أنا هنا جنبك دايماً."
+      ] : [
         "I hear you clearly.. It seems like you're going through a tough time, would you like to tell me more about how you feel?",
         "I'm here with you and won't leave you. Remember that your feelings are very important and I'm interested in hearing you.",
         "Take a deep breath.. I care about what you're saying, keep talking, I'm listening to you with love.",

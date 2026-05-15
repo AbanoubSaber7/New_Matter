@@ -23,7 +23,9 @@ class ChatMessage {
     return ChatMessage(
       text: map['text'] ?? '',
       sender: MessageSender.values[map['sender'] ?? 0],
-      timestamp: (map['timestamp'] as dynamic).toDate(),
+      timestamp: map['timestamp'] != null 
+          ? (map['timestamp'] as dynamic).toDate() 
+          : DateTime.now(),
     );
   }
 }
