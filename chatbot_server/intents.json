@@ -1,0 +1,116 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": [
+        "Hi",
+        "Hello",
+        "Hey",
+        "Good morning",
+        "السلام عليكم",
+        "سلام",
+        "هلا",
+        "مرحبا",
+        "اهلا"
+      ],
+      "responses": [
+        "Hello — I'm here to listen. How are you feeling today?",
+        "Hi there. I'm glad you reached out. What's on your mind?",
+        "أهلاً بك، أنا هنا للاستماع. كيف حالك اليوم؟"
+      ]
+    },
+    {
+      "tag": "mood_low",
+      "patterns": [
+        "I feel sad",
+        "feeling down",
+        "depressed",
+        "hopeless",
+        "أنا حزين",
+        "حزين",
+        "مكتئب",
+        "تعبت",
+        "مش قادر أكمل",
+        "مفيش أمل"
+      ],
+      "responses": [
+        "I'm really sorry you're going through this. Your feelings matter. Would you like to talk a bit more about what happened?",
+        "That sounds really heavy. You're not alone. What would feel supportive right now — talking, breathing, or just being heard?",
+        "أنا آسف إنك حاسس كده. مشاعرك مهمة. تحب تحكي أكتر عن اللي حصل؟"
+      ]
+    },
+    {
+      "tag": "anxiety",
+      "patterns": [
+        "anxious",
+        "panic",
+        "worried",
+        "can't sleep",
+        "قلق",
+        "قلقان",
+        "خايف",
+        "توتر",
+        "نوبة",
+        "قلبي بيدق بسرعة"
+      ],
+      "responses": [
+        "Anxiety can feel overwhelming. Try slowing your breathing for a minute: inhale 4, hold 2, exhale 6. I'm here with you.",
+        "It makes sense you'd feel on edge. What's one small thing that usually helps you feel a little safer?",
+        "القلق بيخليك تحس إنك مش مرتاح. جرّب نفس عميق من الأنف وبطء من الفم، وأنا معاك خطوة بخطوة."
+      ]
+    },
+    {
+      "tag": "stress",
+      "patterns": [
+        "stressed",
+        "burnout",
+        "too much work",
+        "ضغط",
+        "ضغط شغل",
+        "إرهاق",
+        "مش قادر أركز"
+      ],
+      "responses": [
+        "Stress can pile up fast. What's the biggest pressure on you right now — work, family, or something else?",
+        "When everything feels urgent, even a 5-minute break can help. What would a tiny break look like for you today?",
+        "الضغط بيتراكم بسرعة. إيه أكتر حاجة مضغوط منها دلوقتي؟"
+      ]
+    },
+    {
+      "tag": "lonely",
+      "patterns": [
+        "lonely",
+        "no one understands",
+        "isolated",
+        "وحيد",
+        "محدش بيفهمني",
+        "محدش بيسمعني"
+      ],
+      "responses": [
+        "Loneliness hurts. Thank you for telling me — that already takes courage. What kind of connection are you missing most?",
+        "Feeling unseen is painful. I'm listening. What would you want someone close to you to understand?",
+        "الوحدة بتوجع. شكراً إنك قلت — ده يحتاج شجاعة. تحب أسمع أكتر؟"
+      ]
+    },
+    {
+      "tag": "thanks",
+      "patterns": [
+        "thank you",
+        "thanks",
+        "شكرا",
+        "مشكور",
+        "تسلم"
+      ],
+      "responses": [
+        "You're welcome. I'm really glad you talked to me.",
+        "Anytime. Take care of yourself — you matter.",
+        "العفو. أنا مبسوط إنك شاركتني."
+      ]
+    }
+  ],
+  "fallback_responses": [
+    "I'm not sure I understood that fully, but I'm listening. Could you tell me a bit more in your own words?",
+    "Thanks for sharing. What feels most important for you to talk about right now?",
+    "شكراً على كلامك. تحب توضح أكتر عشان أفهمك أحسن؟"
+  ]
+}
